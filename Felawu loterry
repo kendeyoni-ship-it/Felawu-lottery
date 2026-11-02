@@ -1,0 +1,283 @@
+
+<!DOCTYPE html>
+<html lang="am">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FELAWU LOTTERY</title>
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;background:#090d16;color:white;
+ font-family:Arial,sans-serif;
+}
+header{
+ background:#111827;padding:20px;
+ text-align:center;border-bottom:2px solid #d6a637;
+}
+.logo{color:#f5c451;font-size:27px;font-weight:bold}
+.container{max-width:650px;margin:auto;padding:18px}
+.card{
+ background:#151e2e;padding:20px;
+ border-radius:15px;margin:15px 0;
+ border:1px solid #344052;
+}
+h2{color:#f5c451}
+input,button,select{
+ width:100%;padding:13px;margin:8px 0;
+ border-radius:8px;border:1px solid #46536a;
+ font-size:15px;
+}
+input,select{background:#0d1522;color:white}
+button{
+ background:#d6a637;color:#111;
+ border:0;font-weight:bold;cursor:pointer;
+}
+button:hover{opacity:.85}
+.secondary{background:#344052;color:white}
+.accept{background:#168c57;color:white}
+.reject{background:#bd3545;color:white}
+.hidden{display:none}
+.status{padding:12px;border-radius:8px;background:#253449}
+#prizeImage{width:100%;max-height:260px;object-fit:contain;border-radius:10px}
+.small{color:#aab5c5;font-size:13px}
+</style>
+</head>
+<body>
+
+<header>
+ <div class="logo">★ FELAWU LOTTERY ★</div>
+ <p>YOUR CHANCE · YOUR FUTURE</p>
+ <button class="secondary" onclick="changeLanguage()">
+   አማርኛ / English
+ </button>
+</header>
+
+<div class="container">
+
+<section id="home">
+ <div class="card">
+  <h2 id="welcome">ወደ FELAWU LOTTERY እንኳን በደህና መጡ!</h2>
+  <img id="prizeImage"
+  src="https://placehold.co/600x350/151e2e/f5c451?text=FELAWU+PRIZE">
+  <h2 id="prizeName">የዚህ ዙር ሽልማት</h2>
+  <p id="prizeDescription">የሽልማቱ መግለጫ እዚህ ይታያል።</p>
+  <h3>የቀረው ጊዜ</h3>
+  <h2 id="timer">--:--:--</h2>
+ </div>
+
+ <div class="card">
+  <h2 id="registerTitle">ይመዝገቡ</h2>
+  <form id="registerForm">
+   <input id="fullName" placeholder="ሙሉ ስም" required>
+   <input id="phone" type="tel"
+   placeholder="ስልክ ቁጥር" required>
+   <button type="submit" id="registerButton">
+    ይመዝገቡ
+   </button>
+  </form>
+  <div id="userStatus" class="status hidden"></div>
+  <p class="small">
+   ይህ የሙከራ ስሪት ነው። እውነተኛ የግል መረጃ
+   አታስገቡ።
+  </p>
+ </div>
+</section>
+
+<section id="admin" class="hidden">
+ <div class="card">
+  <h2>ADMIN DASHBOARD</h2>
+  <h3>የተሳታፊ ጥያቄዎች</h3>
+  <div id="requests"></div>
+ </div>
+
+ <div class="card">
+  <h2>የሽልማት ማስተዳደሪያ</h2>
+  <input id="newPrize" placeholder="የሽልማት ስም">
+  <input id="newDescription" placeholder="የሽልማት መግለጫ">
+  <input id="newImage" placeholder="የምስል URL">
+  <label>የመጨረሻ ቀንና ሰዓት</label>
+  <input id="endDate" type="datetime-local">
+  <button onclick="savePrize()">ሽልማት አስቀምጥ</button>
+ </div>
+</section>
+
+<div class="card">
+ <button class="secondary" onclick="openAdmin()">
+  Admin Login
+ </button>
+</div>
+
+</div>
+
+<script>
+let english=false;
+
+let participants=JSON.parse(
+ localStorage.getItem("felawu_users")||"[]"
+);
+
+let prize=JSON.parse(
+ localStorage.getItem("felawu_prize")||"null"
+);
+
+function saveUsers(){
+ localStorage.setItem(
+  "felawu_users",JSON.stringify(participants)
+ );
+}
+
+function renderPrize(){
+ if(!prize)return;
+ document.getElementById("prizeName").textContent=prize.name;
+ document.getElementById("prizeDescription").textContent=prize.description;
+ document.getElementById("prizeImage").src=
+ prize.image||"https://placehold.co/600x350";
+ updateTimer();
+}
+
+document.getElementById("registerForm").onsubmit=function(e){
+ e.preventDefault();
+
+ const name=document.getElementById("fullName").value.trim();
+ const phone=document.getElementById("phone").value.trim();
+
+ if(!name||!phone)return;
+
+ if(participants.some(p=>p.phone===phone)){
+  alert("ይህ ስልክ ቁጥር ቀድሞ ተመዝግቧል።");
+  return;
+ }
+
+ const user={
+  id:Date.now(),
+  name:name,
+  phone:phone,
+  status:"Pending"
+ };
+
+ participants.push(user);
+ saveUsers();
+
+ document.getElementById("userStatus").classList.remove("hidden");
+ document.getElementById("userStatus").textContent=
+ "የመመዝገቢያ ጥያቄዎ ተልኳል። የAdmin ውሳኔ ይጠብቁ።";
+
+ this.reset();
+};
+
+function openAdmin(){
+ const pin=prompt("Admin PIN:");
+
+ // DEMO ONLY: This is not secure authentication.
+ if(pin!=="1234"){
+  alert("የAdmin መግቢያ አልተሳካም።");
+  return;
+ }
+
+ document.getElementById("home").classList.add("hidden");
+ document.getElementById("admin").classList.remove("hidden");
+ renderRequests();
+}
+
+function renderRequests(){
+ const box=document.getElementById("requests");
+ box.innerHTML="";
+
+ participants.forEach(p=>{
+  const div=document.createElement("div");
+  div.className="card";
+
+  const name=document.createElement("h3");
+  name.textContent=p.name;
+
+  const phone=document.createElement("p");
+  phone.textContent=p.phone;
+
+  const status=document.createElement("p");
+  status.textContent="Status: "+p.status;
+
+  div.append(name,phone,status);
+
+  if(p.status==="Pending"){
+   const accept=document.createElement("button");
+   accept.className="accept";
+   accept.textContent="Accept";
+   accept.onclick=()=>updateStatus(p.id,"Accepted");
+
+   const reject=document.createElement("button");
+   reject.className="reject";
+   reject.textContent="Reject";
+   reject.onclick=()=>updateStatus(p.id,"Rejected");
+
+   div.append(accept,reject);
+  }
+
+  box.appendChild(div);
+ });
+}
+
+function updateStatus(id,status){
+ participants=participants.map(p=>
+  p.id===id?{...p,status}:p
+ );
+ saveUsers();
+ renderRequests();
+}
+
+function savePrize(){
+ const name=document.getElementById("newPrize").value.trim();
+ const description=document.getElementById("newDescription").value.trim();
+ const image=document.getElementById("newImage").value.trim();
+ const date=document.getElementById("endDate").value;
+
+ if(!name||!date){
+  alert("ስምና የመጨረሻ ጊዜ ያስፈልጋሉ።");
+  return;
+ }
+
+ prize={name,description,image,end:date};
+ localStorage.setItem("felawu_prize",JSON.stringify(prize));
+
+ alert("ሽልማቱ ተቀምጧል።");
+ renderPrize();
+}
+
+function updateTimer(){
+ if(!prize||!prize.end)return;
+
+ const distance=new Date(prize.end)-new Date();
+
+ if(distance<=0){
+  document.getElementById("timer").textContent="ጊዜው አልቋል";
+  return;
+ }
+
+ const d=Math.floor(distance/86400000);
+ const h=Math.floor(distance%86400000/3600000);
+ const m=Math.floor(distance%3600000/60000);
+ const s=Math.floor(distance%60000/1000);
+
+ document.getElementById("timer").textContent=
+ `${d}d ${h}h ${m}m ${s}s`;
+}
+
+setInterval(updateTimer,1000);
+renderPrize();
+
+function changeLanguage(){
+ english=!english;
+
+ document.getElementById("welcome").textContent=
+ english?"WELCOME TO FELAWU LOTTERY!":
+ "ወደ FELAWU LOTTERY እንኳን በደህና መጡ!";
+
+ document.getElementById("registerTitle").textContent=
+ english?"Register":"ይመዝገቡ";
+
+ document.getElementById("registerButton").textContent=
+ english?"Register":"ይመዝገቡ";
+}
+</script>
+</body>
+</html>
